@@ -13,7 +13,7 @@ import { ActionBar } from 'vs/base/browser/ui/actionbar/actionbar';
 import { CountBadge } from 'vs/base/browser/ui/countBadge/countBadge';
 import { FileLabel } from 'vs/workbench/browser/labels';
 import { ITree, IDataSource, ISorter, IAccessibilityProvider, IFilter, IRenderer, ContextMenuEvent } from 'vs/base/parts/tree/browser/tree';
-import { Match, SearchResult, FileMatch, FileMatchOrMatch, SearchModel, FolderMatch } from 'vs/workbench/parts/search/common/searchModel';
+import { Match, SearchResult, FileMatch, FileMatchOrMatch, SearchModel, FolderMatch, RenderableMatch } from 'vs/workbench/parts/search/common/searchModel';
 import { IWorkspaceContextService, WorkbenchState } from 'vs/platform/workspace/common/workspace';
 import { Range } from 'vs/editor/common/core/range';
 import { SearchView } from 'vs/workbench/parts/search/browser/searchView';
@@ -113,7 +113,7 @@ export class SearchDataSource implements IDataSource {
 
 export class SearchSorter implements ISorter {
 
-	public compare(tree: ITree, elementA: FileMatchOrMatch, elementB: FileMatchOrMatch): number {
+	public compare(tree: ITree, elementA: RenderableMatch, elementB: RenderableMatch): number {
 		if (elementA instanceof FolderMatch && elementB instanceof FolderMatch) {
 			return elementA.index() - elementB.index();
 		}

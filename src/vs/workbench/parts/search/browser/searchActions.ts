@@ -16,6 +16,7 @@ import { IReplaceService } from 'vs/workbench/parts/search/common/replace';
 import * as Constants from 'vs/workbench/parts/search/common/constants';
 import { IWorkbenchEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { ResolvedKeybinding, createKeybinding } from 'vs/base/common/keyCodes';
+import {SearchSorter} from 'vs/workbench/parts/search/browser/searchResultsView';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { OS, isWindows } from 'vs/base/common/platform';
@@ -758,10 +759,18 @@ export const copyMatchCommand: ICommandHandler = (accessor, match: RenderableMat
 	}
 };
 
+class FolderMatchSorter extends SearchSorter{
+	public compare2(elemetA: RenderableMatch, elementB: RenderableMatch): number{
+		return this.compare(null, elemetA, elementB);
+
+	}
+}
+
 function allFolderMatchesToString(folderMatches: FolderMatch[], maxMatches: number): string {
 	const folderResults: string[] = [];
 	let numMatches = 0;
-
+	var sorter = new FolderMatchSorter();
+	folderMatches.sort(sorter.compare2);
 	for (let i = 0; i < folderMatches.length && numMatches < maxMatches; i++) {
 		const folderResult = folderMatchToString(folderMatches[i], maxMatches - numMatches);
 		if (folderResult.count) {
