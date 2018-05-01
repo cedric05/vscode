@@ -363,11 +363,10 @@ export class ParameterHintsWidget implements IContentWidget, IDisposable {
 		if (activeParameter && activeParameter.documentation) {
 			const documentation = $('span.documentation');
 			if (typeof activeParameter.documentation === 'string') {
-				dom.removeClass(this.docs, 'markdown-docs');
 				documentation.textContent = activeParameter.documentation;
 			} else {
-				dom.addClass(this.docs, 'markdown-docs');
 				const renderedContents = this.markdownRenderer.render(activeParameter.documentation);
+				dom.addClass(renderedContents.element, 'markdown-docs');
 				this.renderDisposeables.push(renderedContents);
 				documentation.appendChild(renderedContents.element);
 			}
@@ -380,6 +379,7 @@ export class ParameterHintsWidget implements IContentWidget, IDisposable {
 			dom.append(this.docs, $('p', null, signature.documentation));
 		} else {
 			const renderedContents = this.markdownRenderer.render(signature.documentation);
+			dom.addClass(renderedContents.element, 'markdown-docs');
 			this.renderDisposeables.push(renderedContents);
 			dom.append(this.docs, renderedContents.element);
 		}

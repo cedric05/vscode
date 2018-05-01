@@ -8,15 +8,15 @@ import * as DOM from 'vs/base/browser/dom';
 import { TPromise } from 'vs/base/common/winjs.base';
 import { Action } from 'vs/base/common/actions';
 import { IViewletService } from 'vs/workbench/services/viewlet/browser/viewlet';
-import { ITree } from 'vs/base/parts/tree/browser/tree';
+import { ITree, ISorter } from 'vs/base/parts/tree/browser/tree';
 import { INavigator } from 'vs/base/common/iterator';
 import { SearchView } from 'vs/workbench/parts/search/browser/searchView';
 import { Match, FileMatch, FileMatchOrMatch, FolderMatch, RenderableMatch, SearchResult } from 'vs/workbench/parts/search/common/searchModel';
+import { Range } from 'vs/editor/common/core/range';
 import { IReplaceService } from 'vs/workbench/parts/search/common/replace';
 import * as Constants from 'vs/workbench/parts/search/common/constants';
 import { IWorkbenchEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { ResolvedKeybinding, createKeybinding } from 'vs/base/common/keyCodes';
-import {SearchSorter} from 'vs/workbench/parts/search/browser/searchResultsView';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { OS, isWindows } from 'vs/base/common/platform';
@@ -718,7 +718,6 @@ function fileMatchToString(fileMatch: FileMatch, maxMatches: number): { text: st
 		.slice(0, maxMatches)
 		.map(matchToString)
 		.map(matchText => '  ' + matchText);
-
 	return {
 		text: `${uriToClipboardString(fileMatch.resource())}${lineDelimiter}${matchTextRows.join(lineDelimiter)}`,
 		count: matchTextRows.length
@@ -729,8 +728,13 @@ function folderMatchToString(folderMatch: FolderMatch, maxMatches: number): { te
 	const fileResults: string[] = [];
 	let numMatches = 0;
 
+	let sorter = new SearchSorter();
+	let matches = folderMatch.matches();
+	let comparater = sorter.compare.bind(null);
+	matches.sort(comparater);
+
 	for (let i = 0; i < folderMatch.fileCount() && numMatches < maxMatches; i++) {
-		const fileResult = fileMatchToString(folderMatch.matches()[i], maxMatches - numMatches);
+		const fileResult = fileMatchToString(matches[i], maxMatches - numMatches);
 		numMatches += fileResult.count;
 		fileResults.push(fileResult.text);
 	}
@@ -759,18 +763,26 @@ export const copyMatchCommand: ICommandHandler = (accessor, match: RenderableMat
 	}
 };
 
-class FolderMatchSorter extends SearchSorter{
-	public compare2(elemetA: RenderableMatch, elementB: RenderableMatch): number{
-		return this.compare(null, elemetA, elementB);
+export class SearchSorter implements ISorter {
+	public compare(tree: ITree, elementA: FileMatchOrMatch, elementB: FileMatchOrMatch): number {
+		if (elementA instanceof FolderMatch && elementB instanceof FolderMatch) {
+			return elementA.index() - elementB.index();
+		}
 
+		if (elementA instanceof FileMatch && elementB instanceof FileMatch) {
+			return elementA.resource().fsPath.localeCompare(elementB.resource().fsPath) || elementA.name().localeCompare(elementB.name());
+		}
+
+		if (elementA instanceof Match && elementB instanceof Match) {
+			return Range.compareRangesUsingStarts(elementA.range(), elementB.range());
+		}
+		return undefined;
 	}
 }
 
 function allFolderMatchesToString(folderMatches: FolderMatch[], maxMatches: number): string {
 	const folderResults: string[] = [];
 	let numMatches = 0;
-	var sorter = new FolderMatchSorter();
-	folderMatches.sort(sorter.compare2);
 	for (let i = 0; i < folderMatches.length && numMatches < maxMatches; i++) {
 		const folderResult = folderMatchToString(folderMatches[i], maxMatches - numMatches);
 		if (folderResult.count) {
